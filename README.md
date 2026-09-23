@@ -1,0 +1,86 @@
+# TinyFanControl
+
+TinyFanControl is a small Windows tray application that sets motherboard fan speeds and then stays completely idle. Its poll rate is zero. It never runs a background refresh. While you are in a game it does not read sensors, rewrite fan registers, or schedule any work, so it adds nothing to stutter or frametimes.
+
+You choose a duty, press Apply, and that speed is written once. The process then sits in the tray and does no further hardware work until you change a fan or quit.
+
+## Zero poll rate
+
+A fan tool only stays out of a game's frame pacing if it stops talking to the hardware. TinyFanControl never starts a polling loop.
+
+- No timer, no refresh interval, and no background thread.
+- No periodic temperature, RPM, or duty reads.
+- No periodic writes to fan-control registers.
+- The open window does not keep sampling. The percentage on screen is the duty you set, not a live reading ticking in the background.
+
+Hardware is touched only because you did something:
+
+| When | What happens |
+| --- | --- |
+| Startup | Controls are discovered once. Each saved manual speed is written once. |
+| Apply | That fan's duty is written once. |
+| Reset, or a profile entry saved as automatic | That header is handed back to the BIOS and read once, so the slider matches the firmware. |
+| Open the window | Fans still under BIOS control are read once, so an automatic slider is not showing a stale number. Manual fans are left alone. |
+| Exit | Every header is released and the hardware session is closed. |
+
+Nothing is scheduled between those moments. With the app in the tray during a match, the poll rate stays at 0. There is no refresh tick that can land inside a frame.
+
+Settings, the four profiles, and the window position are written to disk only when you save, delete, or close. There is no file watcher.
+
+## What you can do
+
+- Set any detected motherboard or controller fan to a fixed duty from 0 to 100 percent. Dragging the slider only changes the number on screen. The register is written when you press Apply.
+- Hand a header back to its BIOS curve with Reset.
+- Keep four profile slots. Left-click an empty slot to capture the current speeds. Left-click a filled slot to apply them. Right-click a filled slot to clear it.
+- Leave the app in the system tray. Double-click the icon, or choose Open Controls, to bring the window back.
+- Speeds and profiles are restored the next time the app starts. A manual fan is written once at launch and is not sampled again.
+
+Minimizing hides the window to the tray and leaves your speeds in place. Closing the window quits the app and returns fan control to the BIOS.
+
+## Requirements
+
+- Windows 10 or 11, 64-bit
+- Administrator rights. The app requests them, because LibreHardwareMonitor needs them to reach the Super I/O.
+- The PawniO driver, which LibreHardwareMonitor uses for chipset register access
+
+## PawniO
+
+LibreHardwareMonitor reaches fan, temperature, and voltage registers through the signed PawniO kernel driver. Without it, TinyFanControl starts normally and reports that no fan controls were detected. Other monitoring tools can still work, because they ship their own drivers.
+
+1. Download a current [LibreHardwareMonitor release](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases).
+2. Run `LibreHardwareMonitor.exe` and accept the PawniO install prompt if it appears.
+3. Start TinyFanControl again.
+
+## Build
+
+The project targets .NET 8 for Windows, with WPF.
+
+Self-contained single file (portable, about 73 MB):
+
+```powershell
+dotnet publish -c Release -r win-x64 --self-contained `
+  -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:EnableCompressionInSingleFile=true `
+  -o ./publish
+```
+
+`IncludeNativeLibrariesForSelfExtract` keeps the WPF native libraries inside the executable. Without it, `wpfgfx_cor3.dll`, `PresentationNative_cor3.dll`, and three other native DLLs are left beside the exe, so the build is not standalone. `EnableCompressionInSingleFile` brings the executable down from about 157 MB to about 73 MB.
+
+Framework-dependent build (smaller; needs the .NET 8 desktop runtime):
+
+```powershell
+dotnet publish -c Release -r win-x64 -o ./publish
+```
+
+## Fan control notes
+
+Use LibreHardwareMonitorLib 0.9.7 or newer. On 0.9.6 the NCT6687 driver scales writes to the System Fan channels by roughly ten times, so a requested 40 percent is programmed as about 4 percent. That sits under a typical fan start threshold, the fan stops, and it reports 0 RPM. CPU Fan and Pump Fan are not affected. This project references 0.9.7-pre726.
+
+Leaving the app hands the fans back to the BIOS. `SetDefault()` releases each control, and `Computer.Close()` rewrites every control register with the value the library snapshotted when it opened. Manual speeds apply only while the app is running. They are saved and written again on the next launch.
+
+A header driven by a real BIOS curve, such as a CPU fan, is usually reclaimed within a few seconds of `SetDefault()`, because the firmware keeps writing that register. A header configured as a fixed duty has no such loop: the firmware writes it once during POST and does not touch it again, so releasing it changes nothing visible and the register keeps the last value written to it.
+
+On the board this was written against, System Fan 5 is a fixed 70 percent with no curve, which is why releasing it looks like nothing happened. That header returns to the BIOS value only when `Close()` rolls the register back, or after a reboot. If the process is killed instead of closed, the pinned duty remains, and the next launch snapshots that value and restores it on exit. Reboot to recover the BIOS duty.
+
+The same interaction is what made the 0.9.6 scaling bug stick. A System Fan header was written near 4 percent instead of 40 percent, the BIOS never corrected a fixed-duty header, and every later launch snapshotted the near-zero value and restored it on exit.

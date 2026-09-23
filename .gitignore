@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+.vs/
+publish/
+publish_out/
+publish_final/
+
+# Local logs and scratch
+build_log.txt
+err.txt
+proxy.log
+proxy.js
+test_*.js
+
+# IDE / OS
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+Thumbs.db
+Desktop.ini

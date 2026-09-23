@@ -1,0 +1,492 @@
+<Window x:Class="TinyFanControl.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TinyFanControl"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="TinyFanControl" Height="620" Width="380"
+        MinHeight="320" MinWidth="340"
+        Icon="/Assets/stressced.ico"
+        Background="#17171B" Foreground="#F1F1F4"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        ShowInTaskbar="True">
+    <!-- Native 8-way resizing on a borderless window: the DWM does the edge
+         and corner hit-testing, so Aero Snap and Win+Arrow come for free.
+         CaptionHeight=0 keeps our own title-bar drag handler in charge. -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="6"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <local:FanNamePartConverter x:Key="NamePart"/>
+
+        <!-- Icons -->
+        <PathGeometry x:Key="IconFan" FillRule="Nonzero"
+                      Figures="M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z"/>
+        <PathGeometry x:Key="IconReset" FillRule="Nonzero"
+                      Figures="M17.65,6.35 C16.2,4.9 14.21,4 12,4 C7.58,4 4.01,7.58 4,12 C4,16.42 7.58,20 12,20 C15.73,20 18.84,17.45 19.73,14 L17.65,14 C16.83,16.33 14.61,18 12,18 C8.69,18 6,15.31 6,12 C6,8.69 8.69,6 12,6 C13.66,6 15.14,6.69 16.22,7.78 L13,11 L20,11 L20,4 L17.65,6.35 Z"/>
+        <PathGeometry x:Key="IconApply" FillRule="Nonzero"
+                      Figures="M9,16.17 L4.83,12 L3.41,13.41 L9,19 L21,7 L19.59,5.59 Z"/>
+
+        <!-- Slim overlay scrollbar -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Name="ThumbBg" Background="#33333E" CornerRadius="3"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBg" Property="Background" Value="#4A4A58"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbBg" Property="Background" Value="#5A5A6A"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Width" Value="Auto"/>
+                    <Setter Property="Height" Value="6"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Windows 11 style caption buttons -->
+        <Style x:Key="CaptionBtn" TargetType="Button">
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#B4B4C0"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#26262E"/>
+                    <Setter Property="Foreground" Value="#F1F1F4"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#2E2E38"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CloseBtn" TargetType="Button" BasedOn="{StaticResource CaptionBtn}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#C42B1C"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#A32316"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Fan card -->
+        <Style x:Key="FanCard" TargetType="Border">
+            <Setter Property="Background" Value="#1F1F26"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="16,13"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="BorderBrush" Value="#2A2A33"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#373742"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Ghost button (Reset) -->
+        <Style x:Key="ResetBtn" TargetType="Button">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#33333E"/>
+            <Setter Property="Foreground" Value="#A0A0AC"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#26262E"/>
+                    <Setter Property="BorderBrush" Value="#3E3E4A"/>
+                    <Setter Property="Foreground" Value="#D6D6DE"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#2C2C36"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Accent button (Apply) -->
+        <Style x:Key="ApplyBtn" TargetType="Button">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="#E6E6EA"/>
+            <Setter Property="Foreground" Value="#1A1A1F"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FFFFFF"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#CFCFD6"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Slider with progress fill -->
+        <Style x:Key="FanSlider" TargetType="Slider">
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Border Height="5" CornerRadius="2.5" Background="#2C2C35" VerticalAlignment="Center"/>
+                            <Track Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge" Focusable="False" IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Grid Background="Transparent" Height="18">
+                                                    <Border Height="5" CornerRadius="2.5,0,0,2.5"
+                                                            Background="#B4B4C0" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge" Focusable="False" IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Grid Background="Transparent" Height="18"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="15" Height="15" Focusable="False">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse Name="Knob" Fill="#E9E9EE" Stroke="#4A4A58" StrokeThickness="1"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Knob" Property="Fill" Value="#FFFFFF"/>
+                                                        <Setter TargetName="Knob" Property="Stroke" Value="#8A8A96"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="Knob" Property="Fill" Value="#FFFFFF"/>
+                                                        <Setter TargetName="Knob" Property="Stroke" Value="#C8C8D2"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Profile slot: empty = ghost like Reset, filled = the same tokens
+             as the MANUAL pill so the footer reads as one system -->
+        <Style x:Key="ProfileBtn" TargetType="Button">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#2E2E38"/>
+            <Setter Property="Foreground" Value="#55555F"/>
+            <Setter Property="ToolTip" Value="Empty slot &#183; click to save the current speeds"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFilled}" Value="True">
+                    <Setter Property="Background" Value="#3A3A46"/>
+                    <Setter Property="BorderBrush" Value="#4A4A58"/>
+                    <Setter Property="Foreground" Value="#E2E2E8"/>
+                    <Setter Property="ToolTip" Value="Click to load this profile &#183; right-click to delete it"/>
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsFilled}" Value="False"/>
+                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Background" Value="#26262E"/>
+                    <Setter Property="BorderBrush" Value="#3E3E4A"/>
+                    <Setter Property="Foreground" Value="#A0A0AC"/>
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsFilled}" Value="True"/>
+                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Background" Value="#474754"/>
+                    <Setter Property="BorderBrush" Value="#5A5A6A"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </MultiDataTrigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#2A2A33"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Border BorderBrush="#2A2A33" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title bar -->
+            <Border Grid.Row="0" Background="#17171B" BorderBrush="#22222A" BorderThickness="0,0,0,1">
+                <Grid Height="34" Background="Transparent" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <Path Data="{StaticResource IconFan}" Fill="#A6A6B2" Width="15" Height="15"
+                              Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="Tiny Fan Control" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="#E8E8EC" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Style="{StaticResource CaptionBtn}" Click="Minimize_Click" ToolTip="Hide to tray">
+                            <Rectangle Width="10" Height="1"
+                                       Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                        <Button Style="{StaticResource CloseBtn}" Click="Close_Click" ToolTip="Exit">
+                            <Path Data="M0,0 L10,10 M10,0 L0,10" StrokeThickness="1.2"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Fan list -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="14,12,6,0">
+                <ItemsControl ItemsSource="{Binding Fans}" Margin="0,0,8,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource FanCard}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Header: name + chip / percentage -->
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto" MinWidth="46"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name, Converter={StaticResource NamePart}, ConverterParameter=fan}"
+                                                       FontSize="13" FontWeight="SemiBold" Foreground="#F1F1F4"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Name="ChipText"
+                                                       Text="{Binding Name, Converter={StaticResource NamePart}, ConverterParameter=chip}"
+                                                       FontSize="9.5" Foreground="#64646E" Margin="0,2,0,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" TextAlignment="Right">
+                                            <Run Text="{Binding Value, Mode=OneWay, StringFormat={}{0:F0}}"
+                                                 FontSize="17" FontWeight="SemiBold" Foreground="#F1F1F4"/><Run
+                                                 Text="%" FontSize="10" Foreground="#8E8E9A"/>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <!-- Slider -->
+                                    <Slider Grid.Row="1" Style="{StaticResource FanSlider}"
+                                            Value="{Binding Value}" Minimum="0" Maximum="100"
+                                            IsSnapToTickEnabled="True" TickFrequency="1"
+                                            Margin="0,11,0,0"/>
+
+                                    <!-- Footer: mode pill / actions -->
+                                    <Grid Grid.Row="2" Margin="0,11,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Name="ModePill" Grid.Column="0" CornerRadius="9" Padding="9,3"
+                                                Background="#26262E" VerticalAlignment="Center">
+                                            <TextBlock Name="ModeText" Text="AUTO" FontSize="9"
+                                                       FontWeight="SemiBold" Foreground="#8E8E9A"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                            <Button Style="{StaticResource ResetBtn}" Margin="0,0,6,0"
+                                                    ToolTip="Return fan to automatic (BIOS) control"
+                                                    Command="{Binding DataContext.SetAutoCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Path Data="{StaticResource IconReset}"
+                                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                          Width="10" Height="10" Stretch="Uniform"
+                                                          VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                    <TextBlock Text="Reset" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource ApplyBtn}"
+                                                    ToolTip="Apply manual fan speed"
+                                                    Command="{Binding DataContext.SetManualCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Path Data="{StaticResource IconApply}"
+                                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                          Width="10" Height="10" Stretch="Uniform"
+                                                          VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                    <TextBlock Text="Apply" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsManual}" Value="True">
+                                    <Setter TargetName="ModePill" Property="Background" Value="#3A3A46"/>
+                                    <Setter TargetName="ModeText" Property="Text" Value="MANUAL"/>
+                                    <Setter TargetName="ModeText" Property="Foreground" Value="#E2E2E8"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Name, Converter={StaticResource NamePart}, ConverterParameter=chip}" Value="">
+                                    <Setter TargetName="ChipText" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Footer: profile slots + tagline -->
+            <Border Grid.Row="2" Background="#17171B" BorderBrush="#22222A" BorderThickness="0,1,0,0">
+                <StackPanel Margin="0,11,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="PROFILES" FontSize="9" FontWeight="SemiBold"
+                                   Foreground="#55555F" VerticalAlignment="Center"
+                                   Margin="0,0,11,0"/>
+                        <ItemsControl ItemsSource="{Binding Profiles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource ProfileBtn}"
+                                            Content="{Binding Label}"
+                                            Command="{Binding DataContext.ProfileCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <!-- A Button never raises Command on right-click,
+                                             so the delete gesture is bound explicitly. -->
+                                        <Button.InputBindings>
+                                            <MouseBinding Gesture="RightClick"
+                                                          Command="{Binding DataContext.DeleteProfileCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          CommandParameter="{Binding}"/>
+                                        </Button.InputBindings>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <TextBlock Text="no polling rates, zero stutter  ·  Stressced software"
+                               FontSize="9.5" Foreground="#4E4E58" HorizontalAlignment="Center"
+                               Margin="0,10,0,11"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
