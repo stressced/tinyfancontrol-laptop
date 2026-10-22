@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <title>TinyFanControl</title>
+  <!-- The original angular T, with Silicon Tuner's purple palette and no border. -->
+  <defs>
+    <linearGradient id="purple" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#9661ff"/>
+      <stop offset=".52" stop-color="#6632e8"/>
+      <stop offset="1" stop-color="#4423ad"/>
+    </linearGradient>
+    <polygon id="mark" points="60.3,35 240,35 194.6,75.3 152.2,75.3 121.6,201.2 99.8,221 59.2,221 95.8,75.3 16,75.3"/>
+    <clipPath id="shape"><use href="#mark"/></clipPath>
+  </defs>
+  <use href="#mark" fill="url(#purple)"/>
+  <g clip-path="url(#shape)">
+    <polygon points="16,75.3 60.3,35 240,35" fill="#ad85ff" opacity=".13"/>
+    <polygon points="59.2,221 142.9,110.7 121.6,201.2 99.8,221" fill="#231059" opacity=".18"/>
+  </g>
+  <g fill="#18122e">
+    <polygon points="81.7,176.3 122.5,176.3 115.2,182.9 78.1,182.9"/>
+    <polygon points="76,191 117.3,191 110,197.6 74.1,197.6"/>
+    <polygon points="72.2,205.7 104.6,205.7 97.3,212.3 70,212.3"/>
+  </g>
+</svg>

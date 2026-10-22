@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -107,6 +108,25 @@ namespace TinyFanControl
 
         // X button → close the entire app
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void Patreon_Click(object sender, RoutedEventArgs e) =>
+            OpenCreatorLink("https://www.patreon.com/cw/Stressced");
+
+        private void X_Click(object sender, RoutedEventArgs e) =>
+            OpenCreatorLink("https://x.com/Stressced");
+
+        private void OpenCreatorLink(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+            {
+                MessageBox.Show(this, $"Could not open your browser.\n\n{url}",
+                    "TinyFanControl", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
 
         protected override void OnStateChanged(EventArgs e)
         {

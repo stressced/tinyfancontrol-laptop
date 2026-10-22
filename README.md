@@ -33,6 +33,7 @@ Settings, the four profiles, and the window position are written to disk only wh
 - Hand a header back to its BIOS curve with Reset.
 - Keep four profile slots. Left-click an empty slot to capture the current speeds. Left-click a filled slot to apply them. Right-click a filled slot to clear it.
 - Leave the app in the system tray. Double-click the icon, or choose Open Controls, to bring the window back.
+- Support development on Patreon or follow Stressced on X using the footer links, which open in your default browser.
 - Speeds and profiles are restored the next time the app starts. A manual fan is written once at launch and is not sampled again.
 
 Minimizing hides the window to the tray and leaves your speeds in place. Closing the window quits the app and returns fan control to the BIOS.
@@ -54,6 +55,14 @@ LibreHardwareMonitor reaches fan, temperature, and voltage registers through the
 ## Build
 
 The project targets .NET 8 for Windows, with WPF.
+
+The executable, window, and tray share `Assets/stressced.ico`. Its editable
+source is `Assets/tinyfan.svg`: the angular T with the Silicon Tuner purple
+palette, a transparent background, and no outline. After changing the vector,
+run `./gen_icon.ps1` before building. It generates the application icon and the
+root `stressced.ico` in sizes 16, 24, 32, 48, 64, 128, and 256 pixels, plus
+`Assets/tinyfan.png` for the window header. Patreon and X icon paths are from
+Simple Icons (CC0 1.0), matching Silicon Tuner.
 
 Self-contained single file (portable, about 73 MB):
 

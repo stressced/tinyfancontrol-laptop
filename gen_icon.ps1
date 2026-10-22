@@ -1,80 +1,65 @@
-# Generates Assets\stressced.ico from stressced-logov1.png.
-# Crops to the "S" logo mark (drops the wordmark so it stays legible when tiny),
-# knocks out the white background to transparency, and packs several PNG-encoded
-# sizes into a single multi-resolution .ico (16..256).
+# Renders Assets\tinyfan.svg into a transparent multi-resolution Windows icon.
+# The vector keeps the original angular T and uses Silicon Tuner's purple palette.
+# Render the deliberately small polygon/gradient SVG vocabulary with System.Drawing;
+# no image editor, network dependency or background-color removal is required.
+$ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Drawing
 
 $root    = Split-Path -Parent $MyInvocation.MyCommand.Path
-$srcPath = Join-Path $root 'stressced-logov1.png'
+$srcPath = Join-Path $root 'Assets\tinyfan.svg'
 $outPath = Join-Path $root 'Assets\stressced.ico'
+$rootOut = Join-Path $root 'stressced.ico'
 
-$src = New-Object System.Drawing.Bitmap($srcPath)
-$W = $src.Width; $H = $src.Height
-
-# The wordmark lives in the lower ~30%. Only scan the top region for the S mark.
-$scanBottom = [int]($H * 0.70)
-
-# --- Pass 1: find the bounding box of non-white "ink" in the scan region -------
-$minX = $W; $minY = $H; $maxX = 0; $maxY = 0
-$rect = New-Object System.Drawing.Rectangle(0, 0, $W, $scanBottom)
-$data = $src.LockBits($rect, [System.Drawing.Imaging.ImageLockMode]::ReadOnly,
-                      [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-$stride = $data.Stride
-$bytes  = New-Object byte[] ($stride * $scanBottom)
-[System.Runtime.InteropServices.Marshal]::Copy($data.Scan0, $bytes, 0, $bytes.Length)
-$src.UnlockBits($data)
-
-# 32bppArgb byte order in memory is B,G,R,A
-for ($y = 0; $y -lt $scanBottom; $y++) {
-    $row = $y * $stride
-    for ($x = 0; $x -lt $W; $x++) {
-        $i = $row + $x * 4
-        $b = $bytes[$i]; $g = $bytes[$i + 1]; $r = $bytes[$i + 2]
-        $mn = [Math]::Min($r, [Math]::Min($g, $b))
-        if ($mn -lt 235) {              # noticeably darker than the white paper => ink
-            if ($x -lt $minX) { $minX = $x }
-            if ($x -gt $maxX) { $maxX = $x }
-            if ($y -lt $minY) { $minY = $y }
-            if ($y -gt $maxY) { $maxY = $y }
-        }
-    }
+if (-not (Test-Path $srcPath)) {
+    throw "Source image not found: $srcPath"
 }
 
-$bw = $maxX - $minX + 1
-$bh = $maxY - $minY + 1
-Write-Host ("Logo mark bbox: x={0} y={1} w={2} h={3}" -f $minX, $minY, $bw, $bh)
+Write-Host ("Using vector: {0}" -f $srcPath)
+[xml]$svg = Get-Content -LiteralPath $srcPath -Raw
+$ns = New-Object System.Xml.XmlNamespaceManager($svg.NameTable)
+$ns.AddNamespace('s', 'http://www.w3.org/2000/svg')
+$culture = [Globalization.CultureInfo]::InvariantCulture
+function Get-Polygon($node) {
+    [System.Drawing.PointF[]]@(($node.points -split '\s+' | Where-Object { $_ }) | ForEach-Object {
+        $xy = $_ -split ','
+        New-Object System.Drawing.PointF([float]::Parse($xy[0], $culture), [float]::Parse($xy[1], $culture))
+    })
+}
 
-# --- Build a transparent, square master bitmap of the mark ---------------------
-$side   = [Math]::Max($bw, $bh)
-$margin = [int]($side * 0.14)
-$canvas = $side + 2 * $margin
-$offX   = $margin + [int](($side - $bw) / 2)
-$offY   = $margin + [int](($side - $bh) / 2)
-
+$canvas = 1024
 $master = New-Object System.Drawing.Bitmap($canvas, $canvas, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-for ($y = 0; $y -lt $bh; $y++) {
-    $row = ($minY + $y) * $stride
-    for ($x = 0; $x -lt $bw; $x++) {
-        $i = $row + ($minX + $x) * 4
-        $b = $bytes[$i]; $g = $bytes[$i + 1]; $r = $bytes[$i + 2]
-        $mn = [Math]::Min($r, [Math]::Min($g, $b))
-        # Alpha from "how far from white": white paper -> 0, solid ink -> 255,
-        # anti-aliased edges keep a soft alpha so the mark stays crisp.
-        $a = [int]((255 - $mn) * 1.45)
-        if ($a -gt 255) { $a = 255 }
-        if ($a -lt 22)  { $a = 0 }
-        if ($a -gt 0) {
-            $master.SetPixel($offX + $x, $offY + $y,
-                [System.Drawing.Color]::FromArgb($a, $r, $g, $b))
-        }
+$graphics = [System.Drawing.Graphics]::FromImage($master)
+$graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+$graphics.ScaleTransform(4, 4)
+$mark = New-Object System.Drawing.Drawing2D.GraphicsPath
+$mark.AddPolygon([System.Drawing.PointF[]](Get-Polygon ($svg.SelectSingleNode('//s:polygon[@id="mark"]', $ns))))
+$gradient = $svg.SelectSingleNode('//s:linearGradient', $ns)
+$brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+    (New-Object System.Drawing.PointF(16, 35)),
+    (New-Object System.Drawing.PointF(195.2, 221)),
+    [System.Drawing.Color]::Black, [System.Drawing.Color]::White)
+$stops = @($gradient.SelectNodes('s:stop', $ns))
+$blend = New-Object System.Drawing.Drawing2D.ColorBlend($stops.Count)
+$blend.Colors = [System.Drawing.Color[]]@($stops | ForEach-Object { [System.Drawing.ColorTranslator]::FromHtml($_.'stop-color') })
+$blend.Positions = [single[]]@($stops | ForEach-Object { if ($_.offset) { [single]::Parse($_.offset, $culture) } else { 0 } })
+$brush.InterpolationColors = $blend
+$graphics.FillPath($brush, $mark)
+$brush.Dispose()
+$graphics.SetClip($mark)
+foreach ($group in $svg.SelectNodes('/s:svg/s:g', $ns)) {
+    foreach ($polygon in $group.SelectNodes('s:polygon', $ns)) {
+        $color = [System.Drawing.ColorTranslator]::FromHtml($(if ($polygon.fill) { $polygon.fill } else { $group.fill }))
+        $alpha = if ($polygon.opacity) { [int][Math]::Round(255 * [double]::Parse($polygon.opacity, $culture)) } else { 255 }
+        $fill = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb($alpha, $color))
+        $graphics.FillPolygon($fill, [System.Drawing.PointF[]](Get-Polygon $polygon))
+        $fill.Dispose()
     }
 }
+$graphics.Dispose()
+$mark.Dispose()
 
-# --- Render each size, then encode a frame -------------------------------------
-# Small sizes go in as classic uncompressed BMP/DIB so System.Drawing.Icon (used
-# by the WPF tray icon) can decode them; 256 goes in as PNG (the standard, and
-# far smaller). Each frame is the raw bytes stored inside the .ico.
+# --- Pass 3: Render each multi-resolution size and encode frames ---
 $sizes  = 16, 24, 32, 48, 64, 128, 256
 $frames = @()
 foreach ($s in $sizes) {
@@ -88,11 +73,12 @@ foreach ($s in $sizes) {
     $g.Dispose()
 
     if ($s -ge 256) {
+        # Full-resolution header image; avoid enlarging the ICO's 16px first frame.
+        $bmp.Save((Join-Path $root 'Assets\tinyfan.png'), [System.Drawing.Imaging.ImageFormat]::Png)
         $ms = New-Object System.IO.MemoryStream
         $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
         $frames += ,(@{ png = $true; data = $ms.ToArray() })
     } else {
-        # Read pixels (memory order is B,G,R,A for 32bppArgb).
         $r = New-Object System.Drawing.Rectangle(0, 0, $s, $s)
         $d = $bmp.LockBits($r, [System.Drawing.Imaging.ImageLockMode]::ReadOnly,
                            [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -117,27 +103,34 @@ foreach ($s in $sizes) {
     $bmp.Dispose()
 }
 
-$fs  = New-Object System.IO.FileStream($outPath, [System.IO.FileMode]::Create)
-$bw2 = New-Object System.IO.BinaryWriter($fs)
-$bw2.Write([UInt16]0)                 # reserved
-$bw2.Write([UInt16]1)                 # type: icon
-$bw2.Write([UInt16]$sizes.Count)      # image count
-$offset = 6 + 16 * $sizes.Count
-for ($k = 0; $k -lt $sizes.Count; $k++) {
-    $s   = $sizes[$k]
-    $len = $frames[$k].data.Length
-    $bw2.Write([byte]($(if ($s -ge 256) { 0 } else { $s })))  # width  (0 => 256)
-    $bw2.Write([byte]($(if ($s -ge 256) { 0 } else { $s })))  # height (0 => 256)
-    $bw2.Write([byte]0)               # palette count
-    $bw2.Write([byte]0)               # reserved
-    $bw2.Write([UInt16]1)             # color planes
-    $bw2.Write([UInt16]32)            # bits per pixel
-    $bw2.Write([UInt32]$len)          # bytes in resource
-    $bw2.Write([UInt32]$offset)       # offset
-    $offset += $len
+# --- Pass 4: Write .ico file binary stream ---
+function Write-IcoFile($targetPath) {
+    $fs  = New-Object System.IO.FileStream($targetPath, [System.IO.FileMode]::Create)
+    $bw2 = New-Object System.IO.BinaryWriter($fs)
+    $bw2.Write([UInt16]0)                 # reserved
+    $bw2.Write([UInt16]1)                 # type: icon
+    $bw2.Write([UInt16]$sizes.Count)      # image count
+    $offset = 6 + 16 * $sizes.Count
+    for ($k = 0; $k -lt $sizes.Count; $k++) {
+        $s   = $sizes[$k]
+        $len = $frames[$k].data.Length
+        $bw2.Write([byte]($(if ($s -ge 256) { 0 } else { $s })))  # width  (0 => 256)
+        $bw2.Write([byte]($(if ($s -ge 256) { 0 } else { $s })))  # height (0 => 256)
+        $bw2.Write([byte]0)               # palette count
+        $bw2.Write([byte]0)               # reserved
+        $bw2.Write([UInt16]1)             # color planes
+        $bw2.Write([UInt16]32)            # bits per pixel
+        $bw2.Write([UInt32]$len)          # bytes in resource
+        $bw2.Write([UInt32]$offset)       # offset
+        $offset += $len
+    }
+    foreach ($f in $frames) { $bw2.Write($f.data) }
+    $bw2.Flush(); $fs.Close()
 }
-foreach ($f in $frames) { $bw2.Write($f.data) }
-$bw2.Flush(); $fs.Close()
 
-$master.Dispose(); $src.Dispose()
+Write-IcoFile $outPath
+Write-IcoFile $rootOut
+
+$master.Dispose()
 Write-Host ("Wrote {0} ({1:N0} bytes)" -f $outPath, (Get-Item $outPath).Length)
+Write-Host ("Wrote {0} ({1:N0} bytes)" -f $rootOut, (Get-Item $rootOut).Length)

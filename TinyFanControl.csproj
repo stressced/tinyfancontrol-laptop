@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\stressced.ico"/>
+    <Resource Include="Assets\tinyfan.png"/>
   </ItemGroup>
 
 </Project>
