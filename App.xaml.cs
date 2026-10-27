@@ -9,7 +9,7 @@ namespace TinyFanControl
 {
     public partial class App : Application
     {
-        private static readonly Mutex AppMutex = new(false, "TinyFanControl_SingleInstance_Mutex");
+        private static readonly Mutex AppMutex = new(false, "TinyFanControlLaptop_SingleInstance_Mutex");
 
         private MainWindow? _mainWindow;
         private TaskbarIcon? _trayIcon;
@@ -88,7 +88,7 @@ namespace TinyFanControl
 
             if (Fans.Count == 0)
                 MessageBox.Show("No fan controls detected.\n\nCheck:\n1. Running as Administrator\n2. PawniO driver is installed (required by LibreHardwareMonitor)",
-                    "TinyFanControl", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    "TinyFanControl Laptop", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private void LoadAndApplySavedSettings()

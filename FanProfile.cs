@@ -47,7 +47,7 @@ namespace TinyFanControl
 
         private static readonly string ProfilesPath = Path.Combine(
             System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
-            "TinyFanControl", "profiles.json");
+            "TinyFanControl-Laptop", "profiles.json");
 
         public static List<StoredProfile> Load()
         {

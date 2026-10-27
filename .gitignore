@@ -16,6 +16,10 @@ proxy.log
 proxy.js
 test_*.js
 
+# OmenMon reference build. The source tree under laptop-fans/ stays in git.
+laptop-fans/**/*.exe
+laptop-fans/**/*.sys
+
 # IDE / OS
 *.user
 *.suo

@@ -1,12 +1,16 @@
-# TinyFanControl
+# TinyFanControl Laptop
 
-TinyFanControl is a small Windows tray application that sets motherboard fan speeds and then stays completely idle. Its poll rate is zero. It never runs a background refresh. While you are in a game it does not read sensors, rewrite fan registers, or schedule any work, so it adds nothing to stutter or frametimes.
+This is the laptop line of TinyFanControl. It is a separate repository so the desktop app at [TinyFanControl](https://github.com/stressced/TinyFanControl) can stay at poll rate zero. The two apps use different mutexes, executables, and settings folders: this one writes to `%AppData%\TinyFanControl-Laptop`.
+
+This snapshot is still the desktop fan controller. Laptop fan backends are not wired in yet. `laptop-fans/OmenMon` is a submodule of [OmenMon](https://github.com/OmenMon/OmenMon) (GPL-3), checked out as reference and excluded from the build. After cloning, run `git submodule update --init`. The prebuilt `OmenMon.exe` and `OmenMon.sys` under `laptop-fans/OmenMon (Fancoolers Victus)/` stay on this machine and are not committed.
+
+Until a laptop backend lands, the behavior below is unchanged: TinyFanControl Laptop sets motherboard fan speeds and then stays completely idle. Its poll rate is zero. It never runs a background refresh. While you are in a game it does not read sensors, rewrite fan registers, or schedule any work, so it adds nothing to stutter or frametimes.
 
 You choose a duty, press Apply, and that speed is written once. The process then sits in the tray and does no further hardware work until you change a fan or quit.
 
 ## Zero poll rate
 
-A fan tool only stays out of a game's frame pacing if it stops talking to the hardware. TinyFanControl never starts a polling loop.
+A fan tool only stays out of a game's frame pacing if it stops talking to the hardware. TinyFanControl Laptop never starts a polling loop.
 
 - No timer, no refresh interval, and no background thread.
 - No periodic temperature, RPM, or duty reads.
@@ -46,11 +50,11 @@ Minimizing hides the window to the tray and leaves your speeds in place. Closing
 
 ## PawniO
 
-LibreHardwareMonitor reaches fan, temperature, and voltage registers through the signed PawniO kernel driver. Without it, TinyFanControl starts normally and reports that no fan controls were detected. Other monitoring tools can still work, because they ship their own drivers.
+LibreHardwareMonitor reaches fan, temperature, and voltage registers through the signed PawniO kernel driver. Without it, TinyFanControl Laptop starts normally and reports that no fan controls were detected. Other monitoring tools can still work, because they ship their own drivers.
 
 1. Download a current [LibreHardwareMonitor release](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases).
 2. Run `LibreHardwareMonitor.exe` and accept the PawniO install prompt if it appears.
-3. Start TinyFanControl again.
+3. Start TinyFanControl Laptop again.
 
 ## Build
 

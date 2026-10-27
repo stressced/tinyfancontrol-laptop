@@ -1,0 +1,3 @@
+[submodule "laptop-fans/OmenMon"]
+	path = laptop-fans/OmenMon
+	url = https://github.com/OmenMon/OmenMon

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:TinyFanControl"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        Title="TinyFanControl" Height="620" Width="380"
+        Title="TinyFanControl Laptop" Height="620" Width="380"
         MinHeight="320" MinWidth="340"
         Icon="/Assets/stressced.ico"
         Background="#17171B" Foreground="#F1F1F4"

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<OmenMon>
+    <Config>
+        <AutoConfig>false</AutoConfig>
+        <AutoStartup>false</AutoStartup>
+        <BiosErrorReporting>true</BiosErrorReporting>
+        <ColorPresets>
+            <Preset Name="DefaultApp">0080FF:00FF00:00FF00:FFFFFF</Preset>
+            <Preset Name="DefaultOem">0F84FA:710FFA:F9350F:FAAC0F</Preset>
+        </ColorPresets>
+        <EcFailLimit>15</EcFailLimit>
+        <EcMonInterval>1000</EcMonInterval>
+        <EcMutexTimeout>200</EcMutexTimeout>
+        <EcRetryLimit>3</EcRetryLimit>
+        <EcWaitLimit>30</EcWaitLimit>
+        <FanCountdownExtendAlways>false</FanCountdownExtendAlways>
+        <FanCountdownExtendInterval>120</FanCountdownExtendInterval>
+        <FanCountdownExtendThreshold>5</FanCountdownExtendThreshold>
+        <FanLevelMax>55</FanLevelMax>
+        <FanLevelMin>20</FanLevelMin>
+        <FanLevelNeedManual>false</FanLevelNeedManual>
+        <FanLevelUseEc>false</FanLevelUseEc>
+        <FanProgramDefault></FanProgramDefault>
+        <FanProgramDefaultAlt></FanProgramDefaultAlt>
+        <FanProgramModeCheckFirst>false</FanProgramModeCheckFirst>
+        <FanProgramSuspend>true</FanProgramSuspend>
+        <FanPrograms />
+        <GpuPowerDefault>Maximum</GpuPowerDefault>
+        <GpuPowerSetInterval>200</GpuPowerSetInterval>
+        <GuiCloseWindowExit>false</GuiCloseWindowExit>
+        <GuiDpiChangeResize>false</GuiDpiChangeResize>
+        <GuiDynamicIcon>true</GuiDynamicIcon>
+        <GuiDynamicIconHasBackground>false</GuiDynamicIconHasBackground>
+        <GuiStayOnTop>false</GuiStayOnTop>
+        <GuiSysInfoFontSize>0</GuiSysInfoFontSize>
+        <GuiTipDuration>30000</GuiTipDuration>
+        <KeyCustomAction>
+            <Enabled>false</Enabled>
+            <ExecCmd></ExecCmd>
+            <ExecArgs></ExecArgs>
+            <Minimized>false</Minimized>
+        </KeyCustomAction>
+        <KeyToggleFanProgram>false</KeyToggleFanProgram>
+        <KeyToggleFanProgramCycleAll>true</KeyToggleFanProgramCycleAll>
+        <KeyToggleFanProgramShowGuiFirst>true</KeyToggleFanProgramShowGuiFirst>
+        <KeyToggleFanProgramSilent>false</KeyToggleFanProgramSilent>
+        <PresetRefreshRateHigh>165</PresetRefreshRateHigh>
+        <PresetRefreshRateLow>60</PresetRefreshRateLow>
+        <Temperature>
+            <Sensor Name="CPUT" Source="EC" />
+            <Sensor Name="GPTM" Source="EC" />
+            <Sensor Name="BIOS" Source="BIOS" Use="false" />
+            <Sensor Name="RTMP" Source="EC" />
+            <Sensor Name="TMP1" Source="EC" />
+            <Sensor Name="TNT2" Source="EC" />
+            <Sensor Name="TNT3" Source="EC" />
+            <Sensor Name="TNT4" Source="EC" />
+            <Sensor Name="TNT5" Source="EC" />
+        </Temperature>
+        <UpdateIconInterval>3</UpdateIconInterval>
+        <UpdateMonitorInterval>3</UpdateMonitorInterval>
+        <UpdateProgramInterval>15</UpdateProgramInterval>
+    </Config>
+</OmenMon>

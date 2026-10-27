@@ -124,7 +124,7 @@ namespace TinyFanControl
             catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
             {
                 MessageBox.Show(this, $"Could not open your browser.\n\n{url}",
-                    "TinyFanControl", MessageBoxButton.OK, MessageBoxImage.Information);
+                    "TinyFanControl Laptop", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

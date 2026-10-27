@@ -15,7 +15,7 @@ namespace TinyFanControl
     {
         private static readonly string SettingsPath = Path.Combine(
             System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
-            "TinyFanControl", "settings.json");
+            "TinyFanControl-Laptop", "settings.json");
 
         public static List<FanSetting> Load()
         {

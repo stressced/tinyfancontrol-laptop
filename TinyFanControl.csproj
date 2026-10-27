@@ -8,6 +8,11 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\stressced.ico</ApplicationIcon>
+    <AssemblyName>TinyFanControl-Laptop</AssemblyName>
+    <Product>TinyFanControl Laptop</Product>
+    <AssemblyTitle>TinyFanControl Laptop</AssemblyTitle>
+    <!-- OmenMon is reference material. Its assembly attributes must not compile into this app. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);laptop-fans/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

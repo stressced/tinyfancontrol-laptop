@@ -20,7 +20,7 @@ namespace TinyFanControl
     {
         private static readonly string LayoutPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "TinyFanControl", "window.json");
+            "TinyFanControl-Laptop", "window.json");
 
         public static WindowLayoutData? Load()
         {
